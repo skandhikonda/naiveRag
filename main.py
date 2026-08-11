@@ -8,10 +8,11 @@ from app.services.chunking_service import ChunkingService
 from app.services.document_load_service import DocumentLoadService
 from app.services.embedding_service import EmbeddingService
 from app.services.vector_store_service import VectorStoreService
+from app.services.retrieval_service import RetrievalService
 
 
 def main() -> None:
-    """Run the basic Naive RAG ingestion pipeline and persist embedded chunks in ChromaDB."""
+    """Run the Naive RAG ingestion pipeline and retrieve chunks for a user question."""
     project_root = Path(__file__).resolve().parent
     pdf_path = project_root / "documents" / "naive_rag_sample_5_page.pdf"
 
@@ -49,11 +50,40 @@ def main() -> None:
     vector_store_service = VectorStoreService()
     vector_store_service.add_chunks(embedded_chunks)
 
-
     print(f"Loaded {len(pages)} page(s) from {pdf_path}")
     print(f"Total chunks: {len(chunks)}")
     print(f"Total embeddings generated: {len(embedded_chunks)}")
     print(f"Total vectors stored in ChromaDB: {vector_store_service.count()}")
+
+    question = input("\nEnter a question for retrieval: ").strip()
+    retrieval_service = RetrievalService(
+        embedding_service=embedding_service,
+        vector_store_service=vector_store_service,
+        top_k=3,
+    )
+
+    print("\n==================================================")
+    print("Question:")
+    print(question)
+    print("\n==================================================")
+
+    try:
+        retrieved_chunks = retrieval_service.retrieve(question)
+    except Exception as exc:
+        print(f"Failed to retrieve chunks: {exc}")
+        return
+
+    if not retrieved_chunks:
+        print("No relevant chunks were found for the provided question.")
+        return
+
+    for index, chunk in enumerate(retrieved_chunks, start=1):
+        print(f"\n==================================================")
+        print(f"Retrieved Chunk {index}")
+        print(f"Page: {chunk.page_number}")
+        print(f"Chunk: {chunk.chunk_number}")
+        print(f"Distance: {chunk.distance}")
+        print(f"\n{chunk.text}\n")
 
 if __name__ == "__main__":
     main()

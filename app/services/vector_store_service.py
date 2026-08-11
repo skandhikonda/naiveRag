@@ -56,10 +56,11 @@ class VectorStoreService:
             embeddings = [chunk.embedding for chunk in chunks]
             metadatas = [
                 {
+                    "chunk_id": chunk_id,
                     "chunk_number": chunk.chunk_number,
                     "page_number": chunk.page_number,
                 }
-                for chunk in chunks
+                for chunk_id, chunk in zip(chunk_ids, chunks)
             ]
 
             self.collection.add(
@@ -84,3 +85,23 @@ class VectorStoreService:
         except Exception as exc:  # pragma: no cover - defensive logging path
             self.logger.exception("Failed to count stored chunks in ChromaDB collection '%s'", self.collection_name)
             raise RuntimeError(f"Unable to count stored chunks in ChromaDB collection '{self.collection_name}'.") from exc
+
+    def query_chunks(self, query_embedding: list[float], top_k: int = 3) -> dict:
+        """Query the ChromaDB collection for the most similar chunks.
+
+        Args:
+            query_embedding: Embedding vector for the query.
+            top_k: Number of similar chunks to retrieve.
+
+        Returns:
+            The raw query result from ChromaDB.
+        """
+        try:
+            return self.collection.query(
+                query_embeddings=[query_embedding],
+                n_results=top_k,
+                include=["metadatas", "documents", "distances"],
+            )
+        except Exception as exc:  # pragma: no cover - defensive logging path
+            self.logger.exception("Failed to query ChromaDB collection '%s'", self.collection_name)
+            raise RuntimeError(f"Unable to query ChromaDB collection '{self.collection_name}'.") from exc
