@@ -1,5 +1,39 @@
 I think this is the **perfect next project**.
 
+INGESTION
+                    │
+PDF → Load → Chunk → Embed → ChromaDB
+                                  ▲
+                                  │
+                    QUERY         │
+Question → Embed → Similarity Search
+                                  │
+                                  ▼
+                         Top-K Chunks
+
+User Question
+      │
+      ▼
+Question Embedding
+      │
+      ▼
+ChromaDB
+      │
+      ▼
+Top-K Relevant Chunks
+      │
+      ├──────────────┐
+      │              │
+      ▼              ▼
+  Context        Question
+      │              │
+      └──────┬───────┘
+             ▼
+          OpenAI
+             │
+             ▼
+        Final Answer
+
 Here's why:
 
 * ✅ You have learned Python.
@@ -958,6 +992,151 @@ GPT
 
 Answer
 ```
+
+prompt:
+
+I have completed Steps 1 through 6 of my Naive RAG project.
+
+The current pipeline is:
+
+PDF
+→ DocumentLoadService
+→ ChunkingService
+→ EmbeddingService
+→ VectorStoreService
+→ ChromaDB
+→ RetrievalService
+→ Top-K relevant chunks
+
+Step 6 successfully retrieves the most relevant document chunks for a user's question.
+
+Now implement Step 7: **RAG Answer Generation**.
+
+The goal is to combine the user's question with the retrieved chunks and use the OpenAI API to generate a grounded answer.
+
+Requirements:
+
+1. Create a `RAGService` class under:
+
+   `app/services/rag_service.py`
+
+2. The service should orchestrate the query-time RAG flow:
+
+   User Question
+   ↓
+   RetrievalService
+   ↓
+   Top-K Relevant Chunks
+   ↓
+   Build Context
+   ↓
+   OpenAI
+   ↓
+   Final Answer
+
+3. Accept a user's natural-language question.
+
+4. Use the existing `RetrievalService` to retrieve the top relevant chunks.
+
+5. Build a context string from the retrieved chunks.
+
+6. Create a prompt containing:
+
+   * The user's question.
+   * The retrieved document context.
+
+7. Instruct the LLM to answer ONLY using the supplied context.
+
+8. If the retrieved context does not contain enough information to answer the question, the model should clearly say that the answer cannot be found in the provided documents instead of inventing an answer.
+
+9. Include the source page numbers in the response where appropriate so the user can understand where the information came from.
+
+10. Use the existing OpenAI service/client implementation where appropriate. Do not duplicate OpenAI API configuration unnecessarily.
+
+11. Use dependency injection where appropriate.
+
+12. Add logging for:
+
+    * Question received
+    * Number of chunks retrieved
+    * OpenAI request
+    * Successful response
+    * Errors
+
+13. Handle:
+
+    * Empty questions
+    * No retrieved chunks
+    * Retrieval errors
+    * OpenAI API errors
+
+14. Create an appropriate response model under:
+
+    `app/models/`
+
+    The response should contain at least:
+
+    * `answer`
+    * `sources`
+
+15. Each source should contain useful information such as:
+
+    * page number
+    * chunk number
+    * optionally the similarity/distance score
+
+16. Update `main.py` so the user can enter a question from the console and receive the generated RAG answer.
+
+Example:
+
+Question:
+What is retrieval-augmented generation?
+
+Answer: <answer generated using the retrieved document context>
+
+Sources:
+
+* Page 2, Chunk 4
+* Page 2, Chunk 5
+
+Important:
+
+Do NOT implement:
+
+* LangChain
+* LlamaIndex
+* Agent frameworks
+* Re-ranking
+* Hybrid search
+* Additional vector databases
+* Additional embedding implementations
+* Web search
+* External knowledge sources
+
+Do not unnecessarily modify the existing DocumentLoadService, ChunkingService, EmbeddingService, VectorStoreService, or RetrievalService.
+
+Keep this implementation simple and beginner-friendly.
+
+The key principle is:
+
+The LLM must answer using the retrieved document chunks as its context rather than relying on outside knowledge.
+
+The final query flow should be:
+
+User Question
+↓
+RetrievalService
+↓
+Top-K Relevant Chunks
+↓
+RAGService
+↓
+Context + Question
+↓
+OpenAI
+↓
+Grounded Answer + Sources
+
 
 This is Retrieval-Augmented Generation.
 

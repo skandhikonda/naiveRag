@@ -9,6 +9,7 @@ from app.services.document_load_service import DocumentLoadService
 from app.services.embedding_service import EmbeddingService
 from app.services.vector_store_service import VectorStoreService
 from app.services.retrieval_service import RetrievalService
+from app.services.rag_service import RAGService
 
 
 def main() -> None:
@@ -56,10 +57,16 @@ def main() -> None:
     print(f"Total vectors stored in ChromaDB: {vector_store_service.count()}")
 
     question = input("\nEnter a question for retrieval: ").strip()
+
     retrieval_service = RetrievalService(
         embedding_service=embedding_service,
         vector_store_service=vector_store_service,
         top_k=3,
+    )
+
+    rag_service = RAGService(
+        retrieval_service=retrieval_service,
+        embedding_service=embedding_service,
     )
 
     print("\n==================================================")
@@ -68,22 +75,20 @@ def main() -> None:
     print("\n==================================================")
 
     try:
-        retrieved_chunks = retrieval_service.retrieve(question)
+        rag_response = rag_service.answer(question)
     except Exception as exc:
-        print(f"Failed to retrieve chunks: {exc}")
+        print(f"Failed to generate answer: {exc}")
         return
 
-    if not retrieved_chunks:
-        print("No relevant chunks were found for the provided question.")
-        return
+    print("\nAnswer:\n")
+    print(rag_response.answer)
 
-    for index, chunk in enumerate(retrieved_chunks, start=1):
-        print(f"\n==================================================")
-        print(f"Retrieved Chunk {index}")
-        print(f"Page: {chunk.page_number}")
-        print(f"Chunk: {chunk.chunk_number}")
-        print(f"Distance: {chunk.distance}")
-        print(f"\n{chunk.text}\n")
+    print("\nSources:\n")
+    if not rag_response.sources:
+        print("- No sources available")
+    else:
+        for src in rag_response.sources:
+            print(f"- Page {src.page_number}, Chunk {src.chunk_number}, Distance: {src.distance}")
 
 if __name__ == "__main__":
     main()
