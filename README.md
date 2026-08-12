@@ -82,6 +82,32 @@ Typical run steps performed by `main.py`:
 
 The script prints the generated answer and lists the sources (page and chunk numbers).
 
+## HTTP API (FastAPI)
+
+A small HTTP API is available at `app.api.routes:app`.
+
+To run the API locally (after installing dependencies):
+
+```powershell
+# from the project root
+uvicorn app.api.routes:app --reload --host 0.0.0.0 --port 8000
+```
+
+Endpoint:
+
+- `POST /ask` — Accepts JSON `{ "question": "...", "top_k": 3 }`, returns `{ "answer": "...", "sources": [...] }`.
+
+Example using `curl`:
+
+```powershell
+curl -X POST "http://127.0.0.1:8000/ask" -H "Content-Type: application/json" -d '{"question":"What is retrieval-augmented generation?","top_k":3}'
+
+Modify the C:\Windows\System32\drivers\etc\hosts file to add the user defined api endpoint.
+http://mynaiverag.local:8000/
+```
+
+
+
 ## Configuration
 
 - Chunk size and overlap are configured when creating `ChunkingService` in `main.py` (defaults in the class can be changed).
